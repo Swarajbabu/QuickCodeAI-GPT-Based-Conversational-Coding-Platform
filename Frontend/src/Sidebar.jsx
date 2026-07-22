@@ -17,7 +17,7 @@ function Sidebar() {
 
     const getAllThreads = async () => {
         try {
-            const response = await fetch("http://localhost:8080/api/thread");
+            const response = await fetch("http://localhost:8081/api/thread");
             if (!response.ok) throw new Error("Failed to fetch");
             const res = await response.json();
             const filteredData = res.map(thread => ({
@@ -48,7 +48,7 @@ function Sidebar() {
         setCurrThreadId(newThreadId);
 
         try {
-            const response = await fetch(`http://localhost:8080/api/thread/${newThreadId}`);
+            const response = await fetch(`http://localhost:8081/api/thread/${newThreadId}`);
             if (!response.ok) throw new Error("Failed to fetch");
             const res = await response.json();
             setPrevChats(res);
@@ -64,7 +64,7 @@ function Sidebar() {
     const deleteThread = async (e, threadId) => {
         e.stopPropagation();
         try {
-            const response = await fetch(`http://localhost:8080/api/thread/${threadId}`, {
+            const response = await fetch(`http://localhost:8081/api/thread/${threadId}`, {
                 method: "DELETE"
             });
             if (!response.ok) throw new Error("Failed to delete");
@@ -94,7 +94,7 @@ function Sidebar() {
         }
 
         try {
-            const response = await fetch(`http://localhost:8080/api/thread/${threadId}`, {
+            const response = await fetch(`http://localhost:8081/api/thread/${threadId}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ title: renameValue.trim() })

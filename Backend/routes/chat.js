@@ -1,6 +1,6 @@
 import express from "express";
 import Thread from "../models/Thread.js";
-import getOpenAIAPIResponse from "../utils/openai.js";
+import getAIResponse from "../utils/openai.js";
 
 const router = express.Router();
 
@@ -106,7 +106,7 @@ router.post("/chat", async (req, res) => {
             content: msg.content
         }));
 
-        const assistantReply = await getOpenAIAPIResponse(conversationHistory);
+        const assistantReply = await getAIResponse(conversationHistory);
 
         thread.messages.push({ role: "assistant", content: assistantReply });
         thread.updatedAt = new Date();
