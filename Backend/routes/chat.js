@@ -4,104 +4,128 @@ import getOpenAIAPIResponse from "../utils/openai.js";
 
 const router = express.Router();
 
-//test
-router.post("/test", async(req, res) => {
+// Get all threads (sorted by most recently updated)
+router.get("/thread", async (req, res) => {
     try {
-        const thread = new Thread({
-            threadId: "abc",
-            title: "Testing New Thread2"
-        });
-
-        const response = await thread.save();
-        res.send(response);
-    } catch(err) {
-        console.log(err);
-        res.status(500).json({error: "Failed to save in DB"});
-    }
-});
-
-//Get all threads
-router.get("/thread", async(req, res) => {
-    try {
-        const threads = await Thread.find({}).sort({updatedAt: -1});
-        //descending order of updatedAt...most recent data on top
+        const threads = await Thread.find({}).sort({ updatedAt: -1 });
         res.json(threads);
-    } catch(err) {
-        console.log(err);
-        res.status(500).json({error: "Failed to fetch threads"});
+    } catch (err) {
+        console.error("Failed to fetch threads:", err.message);
+        res.status(500).json({ error: "Failed to fetch threads" });
     }
 });
 
-router.get("/thread/:threadId", async(req, res) => {
-    const {threadId} = req.params;
+// Get messages for a specific thread
+router.get("/thread/:threadId", async (req, res) => {
+    const { threadId } = req.params;
 
     try {
-        const thread = await Thread.findOne({threadId});
+        const thread = await Thread.findOne({ threadId });
 
-        if(!thread) {
-            res.status(404).json({error: "Thread not found"});
+        if (!thread) {
+            return res.status(404).json({ error: "Thread not found" });
         }
 
         res.json(thread.messages);
-    } catch(err) {
-        console.log(err);
-        res.status(500).json({error: "Failed to fetch chat"});
+    } catch (err) {
+        console.error("Failed to fetch chat:", err.message);
+        res.status(500).json({ error: "Failed to fetch chat" });
     }
 });
 
+// Delete a thread
 router.delete("/thread/:threadId", async (req, res) => {
-    const {threadId} = req.params;
+    const { threadId } = req.params;
 
     try {
-        const deletedThread = await Thread.findOneAndDelete({threadId});
+        const deletedThread = await Thread.findOneAndDelete({ threadId });
 
-        if(!deletedThread) {
-            res.status(404).json({error: "Thread not found"});
+        if (!deletedThread) {
+            return res.status(404).json({ error: "Thread not found" });
         }
 
-        res.status(200).json({success : "Thread deleted successfully"});
-
-    } catch(err) {
-        console.log(err);
-        res.status(500).json({error: "Failed to delete thread"});
+        res.status(200).json({ success: "Thread deleted successfully" });
+    } catch (err) {
+        console.error("Failed to delete thread:", err.message);
+        res.status(500).json({ error: "Failed to delete thread" });
     }
 });
 
-router.post("/chat", async(req, res) => {
-    const {threadId, message} = req.body;
+// Rename a thread
+router.patch("/thread/:threadId", async (req, res) => {
+    const { threadId } = req.params;
+    const { title } = req.body;
 
-    if(!threadId || !message) {
-        res.status(400).json({error: "missing required fields"});
+    if (!title || !title.trim()) {
+        return res.status(400).json({ error: "Title is required" });
     }
 
     try {
-        let thread = await Thread.findOne({threadId});
+        const thread = await Thread.findOneAndUpdate(
+            { threadId },
+            { title: title.trim(), updatedAt: new Date() },
+            { new: true }
+        );
 
-        if(!thread) {
-            //create a new thread in Db
+        if (!thread) {
+            return res.status(404).json({ error: "Thread not found" });
+        }
+
+        res.json({ success: "Thread renamed successfully", thread });
+    } catch (err) {
+        console.error("Failed to rename thread:", err.message);
+        res.status(500).json({ error: "Failed to rename thread" });
+    }
+});
+
+// Send a message and get AI response
+router.post("/chat", async (req, res) => {
+    const { threadId, message } = req.body;
+
+    if (!threadId || !message || !message.trim()) {
+        return res.status(400).json({ error: "threadId and message are required" });
+    }
+
+    try {
+        let thread = await Thread.findOne({ threadId });
+
+        if (!thread) {
+            // Create a new thread
             thread = new Thread({
                 threadId,
-                title: message,
-                messages: [{role: "user", content: message}]
+                title: message.trim().substring(0, 100),
+                messages: [{ role: "user", content: message.trim() }]
             });
         } else {
-            thread.messages.push({role: "user", content: message});
+            thread.messages.push({ role: "user", content: message.trim() });
         }
 
-        const assistantReply = await getOpenAIAPIResponse(message);
+        // Build conversation history for OpenAI (send full context)
+        const conversationHistory = thread.messages.map(msg => ({
+            role: msg.role,
+            content: msg.content
+        }));
 
-        thread.messages.push({role: "assistant", content: assistantReply});
+        const assistantReply = await getOpenAIAPIResponse(conversationHistory);
+
+        thread.messages.push({ role: "assistant", content: assistantReply });
         thread.updatedAt = new Date();
 
         await thread.save();
-        res.json({reply: assistantReply});
-    } catch(err) {
-        console.log(err);
-        res.status(500).json({error: "something went wrong"});
+        res.json({ reply: assistantReply });
+    } catch (err) {
+        console.error("Chat error:", err.message);
+
+        // Provide specific error messages for common OpenAI failures
+        if (err.message.includes("rate limit")) {
+            return res.status(429).json({ error: "Rate limit exceeded. Please wait a moment and try again." });
+        }
+        if (err.message.includes("invalid") || err.message.includes("API key")) {
+            return res.status(401).json({ error: "Invalid API key. Please check your configuration." });
+        }
+
+        res.status(500).json({ error: "Failed to get AI response. Please try again." });
     }
 });
-
-
-
 
 export default router;

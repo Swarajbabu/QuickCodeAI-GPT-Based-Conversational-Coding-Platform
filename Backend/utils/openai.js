@@ -1,6 +1,14 @@
 import "dotenv/config";
 
-const getOpenAIAPIResponse = async(message) => {
+/**
+ * Calls the OpenAI Chat Completions API with the full conversation history
+ * so the model has context of the ongoing conversation.
+ *
+ * @param {Array<{role: string, content: string}>} messages - Full conversation history
+ * @returns {Promise<string>} The assistant's reply text
+ * @throws {Error} If the API call fails or returns an error
+ */
+const getOpenAIAPIResponse = async (messages) => {
     const options = {
         method: "POST",
         headers: {
@@ -9,20 +17,24 @@ const getOpenAIAPIResponse = async(message) => {
         },
         body: JSON.stringify({
             model: "gpt-4o-mini",
-            messages: [{
-                role: "user",
-                content: message
-            }]
+            messages: messages
         })
     };
 
-    try {
-        const response = await fetch("https://api.openai.com/v1/chat/completions", options);
-        const data = await response.json();
-        return data.choices[0].message.content; //reply
-    } catch(err) {
-        console.log(err);
+    const response = await fetch("https://api.openai.com/v1/chat/completions", options);
+    const data = await response.json();
+
+    if (!response.ok) {
+        const errorMsg = data?.error?.message || `OpenAI API error (${response.status})`;
+        console.error("OpenAI API error:", errorMsg);
+        throw new Error(errorMsg);
     }
-}
+
+    if (!data.choices || !data.choices[0]?.message?.content) {
+        throw new Error("Invalid response format from OpenAI API");
+    }
+
+    return data.choices[0].message.content;
+};
 
 export default getOpenAIAPIResponse;

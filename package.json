@@ -1,0 +1,8 @@
+{
+  "name": "quickcodeai-gpt",
+  "version": "1.0.0",
+  "description": "A MERN-based conversational coding platform powered by OpenAI",
+  "dependencies": {
+    "cookie-parser": "^1.4.7"
+  }
+}
