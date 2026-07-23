@@ -2,6 +2,13 @@
   "name": "quickcodeai-gpt",
   "version": "1.0.0",
   "description": "A MERN-based conversational coding platform powered by OpenAI",
+  "scripts": {
+    "install:backend": "npm install --prefix Backend",
+    "install:frontend": "npm install --prefix Frontend",
+    "build:frontend": "npm run build --prefix Frontend",
+    "build": "npm run build:frontend",
+    "start": "node Backend/server.js"
+  },
   "dependencies": {
     "cookie-parser": "^1.4.7"
   }

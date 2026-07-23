@@ -2,6 +2,7 @@ import "./ChatWindow.css";
 import Chat from "./Chat.jsx";
 import { MyContext } from "./MyContext.jsx";
 import { useContext, useState, useEffect, useRef } from "react";
+import { API_BASE_URL } from "./config.js";
 
 function ChatWindow() {
     const {
@@ -66,7 +67,7 @@ function ChatWindow() {
         };
 
         try {
-            const response = await fetch("http://localhost:8081/api/chat", options);
+            const response = await fetch(`${API_BASE_URL}/api/chat`, options);
             const res = await response.json();
 
             if (!response.ok) {
