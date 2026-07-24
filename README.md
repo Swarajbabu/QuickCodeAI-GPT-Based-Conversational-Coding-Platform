@@ -4,6 +4,7 @@ A full-stack conversational coding assistant built with the MERN stack (MongoDB,
 
 ## Features
 
+
 - 💬 Real-time AI chat powered by OpenAI GPT-4o-mini
 - 📝 Persistent chat history with MongoDB
 - 🗂️ Multiple conversation threads (create, switch, delete)
