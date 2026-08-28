@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: quickcodeai-gpt
+    runtime: node
+    plan: free
+    buildCommand: npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: GROQ_API_KEY
+        sync: false
+      - key: AI_MODEL
+        value: qwen/qwen3.8-27b

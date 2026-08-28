@@ -5,9 +5,12 @@
   "scripts": {
     "install:backend": "npm install --prefix Backend",
     "install:frontend": "npm install --prefix Frontend",
+    "install:all": "npm install --prefix Backend && npm install --prefix Frontend",
     "build:frontend": "npm run build --prefix Frontend",
-    "build": "npm run build:frontend",
-    "start": "node Backend/server.js"
+    "build": "npm install --prefix Backend && npm install --prefix Frontend && npm run build --prefix Frontend",
+    "start": "node Backend/server.js",
+    "dev:backend": "npm run dev --prefix Backend",
+    "dev:frontend": "npm run dev --prefix Frontend"
   },
   "dependencies": {
     "cookie-parser": "^1.4.7"
