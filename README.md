@@ -5,29 +5,28 @@ A full-stack conversational coding assistant built with the MERN stack (MongoDB,
 ## Features
 
 
-- 💬 Real-time AI chat powered by OpenAI GPT-4o-mini
-- 📝 Persistent chat history with MongoDB
-- 🗂️ Multiple conversation threads (create, switch, delete)
+- 💬 Real-time AI chat powered by Groq / OpenAI (Qwen 3.8 / GPT-4o-mini)
+- 📝 In-Memory session chat history (zero database setup required)
+- 🗂️ Multiple conversation threads (create, switch, rename, delete)
 - ✨ Markdown rendering with syntax-highlighted code blocks
 - ⌨️ Typing animation for AI responses
-- 🌙 Modern dark theme UI
+- 🌓 High-contrast White & Black design with instant theme toggle
 - 📱 Fully responsive (mobile, tablet, desktop)
 - 🔔 Toast notifications for errors and status updates
 
 ## Tech Stack
 
 - **Frontend**: React 19, Vite, React Markdown, Rehype Highlight
-- **Backend**: Node.js, Express 5, Mongoose
-- **Database**: MongoDB
-- **AI**: OpenAI API (GPT-4o-mini)
+- **Backend**: Node.js, Express 5
+- **Storage**: In-Memory Store (Zero Database Required)
+- **AI**: Groq / OpenAI API
 
 ## Getting Started
 
 ### Prerequisites
 
 - Node.js 18+
-- MongoDB (local or Atlas)
-- OpenAI API key
+- Groq or OpenAI API key (No MongoDB required)
 
 ### Installation
 

@@ -11,6 +11,7 @@ function ChatWindow() {
         currThreadId,
         setPrevChats, setNewChat,
         newChat, sidebarOpen, setSidebarOpen,
+        theme, toggleTheme,
         addToast
     } = useContext(MyContext);
 
@@ -47,7 +48,7 @@ function ChatWindow() {
         setPrompt(e.target.value);
         const el = e.target;
         el.style.height = "auto";
-        el.style.height = Math.min(el.scrollHeight, 150) + "px";
+        el.style.height = Math.min(el.scrollHeight, 180) + "px";
     };
 
     const getReply = async () => {
@@ -68,17 +69,25 @@ function ChatWindow() {
 
         try {
             const response = await fetch(`${API_BASE_URL}/api/chat`, options);
-            const res = await response.json();
+            let res = null;
+            try {
+                res = await response.json();
+            } catch {
+                // If response wasn't valid JSON (e.g. proxy timeout/502), fallback to status message
+            }
 
             if (!response.ok) {
-                throw new Error(res.error || "Failed to get response");
+                throw new Error(res?.error || `Server error (${response.status}). Please check backend.`);
+            }
+
+            if (!res?.reply) {
+                throw new Error("Empty reply received from AI server. Please try again.");
             }
 
             setReply(res.reply);
         } catch (err) {
             console.error("Chat error:", err);
-            addToast(err.message || "Failed to get AI response. Please try again.", "error");
-            // Don't update prevChats on error — leave the conversation as-is
+            addToast(err.message || "Failed to get AI response. Please check server.", "error");
         }
 
         setLoading(false);
@@ -110,17 +119,32 @@ function ChatWindow() {
 
     const handleSuggestionClick = (text) => {
         setPrompt(text);
-        // Focus the textarea
         if (textareaRef.current) {
             textareaRef.current.focus();
         }
     };
 
     const suggestions = [
-        { icon: "fa-code", text: "Write a Python function to sort a list" },
-        { icon: "fa-lightbulb", text: "Explain async/await in JavaScript" },
-        { icon: "fa-bug", text: "Debug this code snippet for me" },
-        { icon: "fa-rocket", text: "Help me optimize a SQL query" }
+        {
+            icon: "fa-code",
+            title: "Algorithm Implementation",
+            text: "Write a high-performance Python script to find all prime numbers up to N using the Sieve of Eratosthenes"
+        },
+        {
+            icon: "fa-react",
+            title: "React Architecture",
+            text: "Explain how React 19 Actions and useActionState work with an interactive form example"
+        },
+        {
+            icon: "fa-bug",
+            title: "Debugging & Review",
+            text: "What are the most common causes of memory leaks in Node.js event listeners, and how do you fix them?"
+        },
+        {
+            icon: "fa-database",
+            title: "Database Query",
+            text: "Write an optimized MongoDB aggregation pipeline to group orders by month and compute revenue"
+        }
     ];
 
     return (
@@ -136,12 +160,26 @@ function ChatWindow() {
                         <i className="fa-solid fa-bars"></i>
                     </button>
                     <div className="navbar-title">
-                        QuickCodeAI-GPT
-                        <span className="model-badge">GPT-4o mini</span>
+                        <span className="navbar-brand-name">QuickCodeAI</span>
+                        <div className="model-badge">
+                            <span className="model-pulse"></span>
+                            <span>Groq · Qwen 3.8</span>
+                        </div>
                     </div>
                 </div>
 
                 <div className="navbar-right" ref={dropdownRef}>
+                    {/* Theme Toggle Button */}
+                    <button
+                        className="theme-toggle-btn"
+                        onClick={toggleTheme}
+                        aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+                        title={`Switch to ${theme === 'dark' ? 'light (white)' : 'dark (black)'} background`}
+                    >
+                        <i className={`fa-solid ${theme === 'dark' ? 'fa-sun' : 'fa-moon'}`}></i>
+                        <span className="theme-toggle-label">{theme === 'dark' ? 'Light' : 'Dark'}</span>
+                    </button>
+
                     <button
                         className="user-avatar"
                         onClick={() => setIsDropdownOpen(!isDropdownOpen)}
@@ -153,20 +191,44 @@ function ChatWindow() {
 
                     {isDropdownOpen && (
                         <div className="dropdown" role="menu">
-                            <button className="dropdown-item" role="menuitem" onClick={() => {
-                                addToast("Settings coming soon!", "info");
-                                setIsDropdownOpen(false);
-                            }}>
+                            <div className="dropdown-header">
+                                <span className="dropdown-user-name">Developer</span>
+                                <span className="dropdown-user-role">Free Tier</span>
+                            </div>
+                            <div className="dropdown-divider"></div>
+                            <button
+                                className="dropdown-item"
+                                role="menuitem"
+                                onClick={() => {
+                                    toggleTheme();
+                                    setIsDropdownOpen(false);
+                                }}
+                            >
+                                <i className={`fa-solid ${theme === 'dark' ? 'fa-sun' : 'fa-moon'}`}></i>
+                                Switch to {theme === 'dark' ? 'Light (White)' : 'Dark (Black)'}
+                            </button>
+                            <button
+                                className="dropdown-item"
+                                role="menuitem"
+                                onClick={() => {
+                                    addToast("Settings coming soon!", "info");
+                                    setIsDropdownOpen(false);
+                                }}
+                            >
                                 <i className="fa-solid fa-gear"></i>
-                                Settings
+                                Preferences
                             </button>
                             <div className="dropdown-divider"></div>
-                            <button className="dropdown-item" role="menuitem" onClick={() => {
-                                addToast("Authentication coming soon!", "info");
-                                setIsDropdownOpen(false);
-                            }}>
+                            <button
+                                className="dropdown-item dropdown-item-muted"
+                                role="menuitem"
+                                onClick={() => {
+                                    addToast("Session is local", "info");
+                                    setIsDropdownOpen(false);
+                                }}
+                            >
                                 <i className="fa-solid fa-arrow-right-from-bracket"></i>
-                                Log out
+                                Sign Out
                             </button>
                         </div>
                     )}
@@ -177,20 +239,32 @@ function ChatWindow() {
             <div className="chat-area" ref={chatAreaRef}>
                 {newChat ? (
                     <div className="empty-state">
-                        <div className="empty-state-icon">
-                            <i className="fa-solid fa-bolt"></i>
+                        <div className="empty-state-badge">
+                            <div className="empty-state-icon">
+                                <i className="fa-solid fa-terminal"></i>
+                            </div>
                         </div>
-                        <h2>How can I help you today?</h2>
-                        <p>Ask me anything about coding, debugging, or software development.</p>
-                        <div className="suggestion-chips">
+
+                        <h1 className="empty-state-title">What would you like to build?</h1>
+                        <p className="empty-state-desc">
+                            Ask me to write code, review architecture, debug issues, or explain complex technical concepts.
+                        </p>
+
+                        <div className="suggestion-grid">
                             {suggestions.map((s, i) => (
                                 <button
                                     key={i}
-                                    className="suggestion-chip"
+                                    className="suggestion-card"
                                     onClick={() => handleSuggestionClick(s.text)}
                                 >
-                                    <i className={`fa-solid ${s.icon}`}></i>
-                                    {s.text}
+                                    <div className="suggestion-card-header">
+                                        <div className="suggestion-icon">
+                                            <i className={`fa-solid ${s.icon}`}></i>
+                                        </div>
+                                        <span className="suggestion-title">{s.title}</span>
+                                        <i className="fa-solid fa-arrow-up-right-from-square suggestion-arrow"></i>
+                                    </div>
+                                    <p className="suggestion-snippet">{s.text}</p>
                                 </button>
                             ))}
                         </div>
@@ -209,7 +283,7 @@ function ChatWindow() {
                             <span></span>
                             <span></span>
                         </div>
-                        <span className="loading-text">Thinking...</span>
+                        <span className="loading-text">Generating code solution...</span>
                     </div>
                 )}
             </div>
@@ -220,7 +294,7 @@ function ChatWindow() {
                     <div className="input-wrapper">
                         <textarea
                             ref={textareaRef}
-                            placeholder="Ask anything..."
+                            placeholder="Ask QuickCodeAI anything about your code..."
                             value={prompt}
                             onChange={handleTextareaChange}
                             onKeyDown={handleKeyDown}
@@ -233,12 +307,13 @@ function ChatWindow() {
                             onClick={getReply}
                             disabled={!prompt.trim() || loading}
                             aria-label="Send message"
+                            title="Send message"
                         >
                             <i className={`fa-solid ${loading ? 'fa-spinner fa-spin' : 'fa-arrow-up'}`}></i>
                         </button>
                     </div>
                     <div className="input-footer">
-                        <p>QuickCodeAI-GPT can make mistakes. Verify important information.</p>
+                        <span>Press <kbd>Enter</kbd> to send, <kbd>Shift + Enter</kbd> for a new line</span>
                     </div>
                 </div>
             </div>

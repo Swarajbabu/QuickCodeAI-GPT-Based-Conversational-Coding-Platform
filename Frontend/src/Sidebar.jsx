@@ -127,9 +127,12 @@ function Sidebar() {
             <div className="sidebar-header">
                 <div className="sidebar-brand">
                     <div className="brand-icon">
-                        <i className="fa-solid fa-bolt"></i>
+                        <i className="fa-solid fa-code"></i>
                     </div>
-                    <span className="brand-text">QuickCodeAI</span>
+                    <div className="brand-info">
+                        <span className="brand-text">QuickCodeAI</span>
+                        <span className="brand-subtext">Conversational IDE</span>
+                    </div>
                 </div>
                 <button
                     className="new-chat-btn"
@@ -137,20 +140,26 @@ function Sidebar() {
                     aria-label="Create new chat"
                 >
                     <i className="fa-solid fa-plus"></i>
-                    New Chat
+                    <span>New Chat</span>
                 </button>
             </div>
 
             {/* Thread list */}
             <div className="thread-list-section">
-                {allThreads.length > 0 && (
-                    <div className="thread-list-label">Recent Chats</div>
-                )}
+                <div className="thread-list-header">
+                    <span className="thread-list-label">Conversations</span>
+                    {allThreads.length > 0 && (
+                        <span className="thread-count">{allThreads.length}</span>
+                    )}
+                </div>
                 <ul className="thread-list">
                     {allThreads.length === 0 ? (
                         <li className="thread-empty">
-                            <i className="fa-regular fa-comments"></i>
-                            <p>No conversations yet</p>
+                            <div className="thread-empty-icon">
+                                <i className="fa-regular fa-message"></i>
+                            </div>
+                            <p className="thread-empty-title">No conversations yet</p>
+                            <p className="thread-empty-subtitle">Start a new chat to begin coding</p>
                         </li>
                     ) : (
                         allThreads.map((thread) => (
@@ -164,7 +173,7 @@ function Sidebar() {
                                 aria-label={`Open chat: ${thread.title}`}
                                 aria-current={thread.threadId === currThreadId ? 'true' : undefined}
                             >
-                                <i className="fa-regular fa-message thread-icon"></i>
+                                <i className="fa-regular fa-comment-dots thread-icon"></i>
                                 {renamingId === thread.threadId ? (
                                     <input
                                         className="rename-input"
@@ -194,7 +203,7 @@ function Sidebar() {
                                         aria-label={`Delete chat: ${thread.title}`}
                                         title="Delete"
                                     >
-                                        <i className="fa-solid fa-trash"></i>
+                                        <i className="fa-regular fa-trash-can"></i>
                                     </button>
                                 </div>
                             </li>
@@ -205,7 +214,10 @@ function Sidebar() {
 
             {/* Footer */}
             <div className="sidebar-footer">
-                <p>Powered by <span className="footer-brand">QuickCodeAI-GPT</span></p>
+                <div className="footer-status">
+                    <span className="status-dot"></span>
+                    <span className="status-text">AI Ready · Groq Qwen</span>
+                </div>
             </div>
         </aside>
     );

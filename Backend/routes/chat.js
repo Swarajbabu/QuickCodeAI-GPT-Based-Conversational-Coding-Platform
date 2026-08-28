@@ -1,13 +1,20 @@
 import express from "express";
-import Thread from "../models/Thread.js";
+import {
+    getAllThreads,
+    getThread,
+    saveUserMessage,
+    saveAssistantReply,
+    renameThread,
+    deleteThread
+} from "../utils/memoryStore.js";
 import getAIResponse from "../utils/openai.js";
 
 const router = express.Router();
 
 // Get all threads (sorted by most recently updated)
-router.get("/thread", async (req, res) => {
+router.get("/thread", (req, res) => {
     try {
-        const threads = await Thread.find({}).sort({ updatedAt: -1 });
+        const threads = getAllThreads();
         res.json(threads);
     } catch (err) {
         console.error("Failed to fetch threads:", err.message);
@@ -16,11 +23,11 @@ router.get("/thread", async (req, res) => {
 });
 
 // Get messages for a specific thread
-router.get("/thread/:threadId", async (req, res) => {
+router.get("/thread/:threadId", (req, res) => {
     const { threadId } = req.params;
 
     try {
-        const thread = await Thread.findOne({ threadId });
+        const thread = getThread(threadId);
 
         if (!thread) {
             return res.status(404).json({ error: "Thread not found" });
@@ -34,13 +41,13 @@ router.get("/thread/:threadId", async (req, res) => {
 });
 
 // Delete a thread
-router.delete("/thread/:threadId", async (req, res) => {
+router.delete("/thread/:threadId", (req, res) => {
     const { threadId } = req.params;
 
     try {
-        const deletedThread = await Thread.findOneAndDelete({ threadId });
+        const deleted = deleteThread(threadId);
 
-        if (!deletedThread) {
+        if (!deleted) {
             return res.status(404).json({ error: "Thread not found" });
         }
 
@@ -52,7 +59,7 @@ router.delete("/thread/:threadId", async (req, res) => {
 });
 
 // Rename a thread
-router.patch("/thread/:threadId", async (req, res) => {
+router.patch("/thread/:threadId", (req, res) => {
     const { threadId } = req.params;
     const { title } = req.body;
 
@@ -61,11 +68,7 @@ router.patch("/thread/:threadId", async (req, res) => {
     }
 
     try {
-        const thread = await Thread.findOneAndUpdate(
-            { threadId },
-            { title: title.trim(), updatedAt: new Date() },
-            { new: true }
-        );
+        const thread = renameThread(threadId, title);
 
         if (!thread) {
             return res.status(404).json({ error: "Thread not found" });
@@ -87,36 +90,26 @@ router.post("/chat", async (req, res) => {
     }
 
     try {
-        let thread = await Thread.findOne({ threadId });
+        // Record user message in in-memory thread
+        const thread = saveUserMessage(threadId, message);
 
-        if (!thread) {
-            // Create a new thread
-            thread = new Thread({
-                threadId,
-                title: message.trim().substring(0, 100),
-                messages: [{ role: "user", content: message.trim() }]
-            });
-        } else {
-            thread.messages.push({ role: "user", content: message.trim() });
-        }
-
-        // Build conversation history for OpenAI (send full context)
+        // Build conversation history for the AI model (full context)
         const conversationHistory = thread.messages.map(msg => ({
             role: msg.role,
             content: msg.content
         }));
 
+        // Request response from Groq / OpenAI
         const assistantReply = await getAIResponse(conversationHistory);
 
-        thread.messages.push({ role: "assistant", content: assistantReply });
-        thread.updatedAt = new Date();
+        // Record assistant response in in-memory thread
+        saveAssistantReply(threadId, assistantReply);
 
-        await thread.save();
         res.json({ reply: assistantReply });
     } catch (err) {
         console.error("Chat error:", err.message);
 
-        // Provide specific error messages for common OpenAI failures
+        // Provide specific error messages for common AI API failures
         if (err.message.includes("rate limit")) {
             return res.status(429).json({ error: "Rate limit exceeded. Please wait a moment and try again." });
         }

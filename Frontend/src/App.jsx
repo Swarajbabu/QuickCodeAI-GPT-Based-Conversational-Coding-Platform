@@ -2,7 +2,7 @@ import './App.css';
 import Sidebar from "./Sidebar.jsx";
 import ChatWindow from "./ChatWindow.jsx";
 import { MyContext } from "./MyContext.jsx";
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { v1 as uuidv1 } from "uuid";
 
 function App() {
@@ -15,13 +15,28 @@ function App() {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [toasts, setToasts] = useState([]);
 
+    // Theme Engine: 'dark' (Obsidian Black) is the default mode
+    const [theme, setTheme] = useState(() => {
+        const savedTheme = localStorage.getItem("quickcode_theme_v2");
+        return savedTheme ? savedTheme : "dark";
+    });
+
+    useEffect(() => {
+        document.documentElement.setAttribute("data-theme", theme);
+        localStorage.setItem("quickcode_theme_v2", theme);
+    }, [theme]);
+
+    const toggleTheme = useCallback(() => {
+        setTheme(prev => (prev === "dark" ? "light" : "dark"));
+    }, []);
+
     // Toast notification system
     const addToast = useCallback((message, type = "info") => {
         const id = Date.now() + Math.random();
         setToasts(prev => [...prev, { id, message, type }]);
         setTimeout(() => {
             setToasts(prev => prev.filter(t => t.id !== id));
-        }, 4000);
+        }, 3500);
     }, []);
 
     const removeToast = useCallback((id) => {
@@ -36,11 +51,12 @@ function App() {
         prevChats, setPrevChats,
         allThreads, setAllThreads,
         sidebarOpen, setSidebarOpen,
+        theme, setTheme, toggleTheme,
         addToast
     };
 
     return (
-        <div className='app'>
+        <div className='app' data-theme={theme}>
             <MyContext.Provider value={providerValues}>
                 <Sidebar />
                 <ChatWindow />

@@ -1,7 +1,6 @@
 import express from "express";
 import "dotenv/config";
 import cors from "cors";
-import mongoose from "mongoose";
 import path from "path";
 import { fileURLToPath } from "url";
 import chatRoutes from "./routes/chat.js";
@@ -10,9 +9,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Early warning for environment variables
-if (!process.env.MONGODB_URI) {
-    console.warn("⚠️ MONGODB_URI environment variable is missing! MongoDB connection may fail.");
-}
 if (!process.env.GROQ_API_KEY && !process.env.OPENAI_API_KEY) {
     console.warn("⚠️ Neither GROQ_API_KEY nor OPENAI_API_KEY is configured. AI response generation will fail.");
 }
@@ -31,7 +27,6 @@ const allowedOrigins = [
 
 app.use(cors({
     origin: (origin, callback) => {
-        // Allow requests with no origin or matching configured origins, or all in non-production
         if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV !== "production") {
             callback(null, true);
         } else {
@@ -46,7 +41,11 @@ app.use("/api", chatRoutes);
 
 // Health check endpoint
 app.get("/api/health", (req, res) => {
-    res.json({ status: "ok", service: "QuickCodeAI-GPT API" });
+    res.json({
+        status: "ok",
+        service: "QuickCodeAI-GPT API",
+        storage: "in-memory"
+    });
 });
 
 // Serve frontend static files in production
@@ -61,22 +60,7 @@ if (process.env.NODE_ENV === "production") {
     });
 }
 
-// Connect to MongoDB first, then start server
-const connectDB = async () => {
-    try {
-        await mongoose.connect(process.env.MONGODB_URI);
-        console.log("✅ Connected to MongoDB");
-    } catch (err) {
-        console.error("❌ Failed to connect to MongoDB:", err.message);
-        process.exit(1);
-    }
-};
-
-const startServer = async () => {
-    await connectDB();
-    app.listen(PORT, () => {
-        console.log(`🚀 QuickCodeAI-GPT server running on port ${PORT}`);
-    });
-};
-
-startServer();
+// Start server directly in In-Memory mode without MongoDB
+app.listen(PORT, () => {
+    console.log(`🚀 QuickCodeAI-GPT server running on port ${PORT} (In-Memory Storage Mode — Zero Database Required)`);
+});
