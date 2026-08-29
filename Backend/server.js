@@ -64,6 +64,7 @@ app.get("/api/health", (req, res) => {
         service: "QuickCodeAI-GPT API",
         storage: "in-memory"
     });
+    console.log("Ok");
 });
 
 // Serve frontend static files in production or if dist directory exists
